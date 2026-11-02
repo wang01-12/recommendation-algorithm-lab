@@ -1,0 +1,81 @@
+movie_id,name,en,year,genres
+1,星球大战,Star Wars,1977,动作|冒险|爱情
+2,星球大战2：帝国反击战,"Empire Strikes Back, The",1980,动作|冒险|剧情
+3,星球大战3：绝地归来,Return of the Jedi,1983,动作|冒险|爱情
+4,玩具总动员,Toy Story,1995,动画|儿童|喜剧
+5,狮子王,"Lion King, The",1994,动画|儿童|歌舞
+6,阿拉丁,Aladdin,1992,动画|儿童|喜剧
+7,美女与野兽,Beauty and the Beast,1991,动画|儿童|歌舞
+8,白雪公主和七个小矮人,Snow White and the Seven Dwarfs,1937,动画|儿童|歌舞
+9,小猪宝贝,Babe,1995,儿童|喜剧|剧情
+10,小鬼当家,Home Alone,1990,儿童|喜剧
+11,勇敢者的游戏,Jumanji,1995,动作|冒险|儿童
+12,窈窕奶爸,Mrs. Doubtfire,1993,喜剧
+13,变相怪杰,"Mask, The",1994,喜剧|犯罪|奇幻
+14,黑衣人,Men in Black,1997,动作|冒险|喜剧
+15,土拨鼠之日,Groundhog Day,1993,喜剧|爱情
+16,回到未来,Back to the Future,1985,喜剧|科幻
+17,外星人E.T.,E.T. the Extra-Terrestrial,1982,儿童|剧情|奇幻
+18,侏罗纪公园,Jurassic Park,1993,动作|冒险|科幻
+19,侏罗纪公园2：失落的世界,"Lost World: Jurassic Park, The",1997,动作|冒险|科幻
+20,独立日,Independence Day (ID4),1996,动作|科幻|战争
+21,终结者,"Terminator, The",1984,动作|科幻|惊悚
+22,终结者2：审判日,Terminator 2: Judgment Day,1991,动作|科幻|惊悚
+23,异形,Alien,1979,动作|恐怖|科幻
+24,异形2,Aliens,1986,动作|科幻|惊悚
+25,银翼杀手,Blade Runner,1982,黑色电影|科幻
+26,2001太空漫游,2001: A Space Odyssey,1968,剧情|悬疑|科幻
+27,第五元素,"Fifth Element, The",1997,动作|科幻
+28,十二猴子,Twelve Monkeys,1995,剧情|科幻
+29,夺宝奇兵,Raiders of the Lost Ark,1981,动作|冒险
+30,夺宝奇兵3,Indiana Jones and the Last Crusade,1989,动作|冒险
+31,碟中谍,Mission: Impossible,1996,动作|冒险|悬疑
+32,虎胆龙威,Die Hard,1988,动作|惊悚
+33,生死时速,Speed,1994,动作|爱情|惊悚
+34,勇闯夺命岛,"Rock, The",1996,动作|冒险|惊悚
+35,真实的谎言,True Lies,1994,动作|冒险|喜剧
+36,变脸,Face/Off,1997,动作|科幻|惊悚
+37,壮志凌云,Top Gun,1986,动作|爱情
+38,亡命天涯,"Fugitive, The",1993,动作|惊悚
+39,蝙蝠侠,Batman,1989,动作|冒险|犯罪
+40,大白鲨,Jaws,1975,动作|恐怖
+41,龙卷风,Twister,1996,动作|冒险|惊悚
+42,红番区,Rumble in the Bronx,1995,动作|冒险|犯罪
+43,警察故事3：超级警察,Supercop,1992,动作|惊悚
+44,这个杀手不太冷,"Professional, The",1994,犯罪|剧情|爱情
+45,教父,"Godfather, The",1972,动作|犯罪|剧情
+46,教父2,"Godfather: Part II, The",1974,动作|犯罪|剧情
+47,好家伙,GoodFellas,1990,犯罪|剧情
+48,低俗小说,Pulp Fiction,1994,犯罪|剧情
+49,盗火线,Heat,1995,动作|犯罪|惊悚
+50,非常嫌疑犯,"Usual Suspects, The",1995,犯罪|惊悚
+51,七宗罪,Seven (Se7en),1995,犯罪|惊悚
+52,沉默的羔羊,"Silence of the Lambs, The",1991,剧情|惊悚
+53,惊魂记,Psycho,1960,恐怖|爱情|惊悚
+54,后窗,Rear Window,1954,悬疑|惊悚
+55,闪灵,"Shining, The",1980,恐怖
+56,惊声尖叫,Scream,1996,恐怖|惊悚
+57,肖申克的救赎,"Shawshank Redemption, The",1994,剧情
+58,阿甘正传,Forrest Gump,1994,喜剧|爱情|战争
+59,辛德勒的名单,Schindler's List,1993,剧情|战争
+60,勇敢的心,Braveheart,1995,动作|剧情|战争
+61,与狼共舞,Dances with Wolves,1990,冒险|剧情|西部
+62,阿波罗13号,Apollo 13,1995,动作|剧情|惊悚
+63,飞越疯人院,One Flew Over the Cuckoo's Nest,1975,剧情
+64,死亡诗社,Dead Poets Society,1989,剧情
+65,心灵捕手,Good Will Hunting,1997,剧情
+66,伴我同行,Stand by Me,1986,冒险|喜剧|剧情
+67,大话王,Liar Liar,1997,喜剧
+68,发条橙,"Clockwork Orange, A",1971,科幻
+69,霸王别姬,Farewell My Concubine,1993,剧情|爱情
+70,饮食男女,Eat Drink Man Woman,1994,喜剧|剧情
+71,泰坦尼克号,Titanic,1997,动作|剧情|爱情
+72,人鬼情未了,Ghost,1990,喜剧|爱情|惊悚
+73,风月俏佳人,Pretty Woman,1990,喜剧|爱情
+74,西雅图夜未眠,Sleepless in Seattle,1993,喜剧|爱情
+75,四个婚礼和一个葬礼,Four Weddings and a Funeral,1994,喜剧|爱情
+76,卡萨布兰卡,Casablanca,1942,剧情|爱情|战争
+77,罗马假日,Roman Holiday,1953,喜剧|爱情
+78,乱世佳人,Gone with the Wind,1939,剧情|爱情|战争
+79,音乐之声,"Sound of Music, The",1965,歌舞
+80,绿野仙踪,"Wizard of Oz, The",1939,冒险|儿童|剧情

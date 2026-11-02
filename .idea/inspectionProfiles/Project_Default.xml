@@ -1,0 +1,28 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="fastapi" />
+          <option value="uvicorn" />
+          <option value="python-multipart" />
+          <option value="langchain" />
+          <option value="langchain-community" />
+          <option value="chromadb" />
+          <option value="pypdf" />
+          <option value="python-docx" />
+          <option value="unstructured" />
+          <option value="sentence-transformers" />
+          <option value="torch" />
+          <option value="langchain-mcp-adapters" />
+          <option value="langgraph" />
+          <option value="langchain-openai" />
+          <option value="streamlit" />
+          <option value="httpx" />
+          <option value="akshare" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

@@ -1,0 +1,915 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今晚看什么 · 协同过滤实验</title>
+<style>
+@font-face{font-family:"Xiaowei";src:url(fonts/xiaowei.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"Limelight";src:url(fonts/limelight.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"Courier Prime";src:url(fonts/courier.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Courier Prime";src:url(fonts/courier-bold.woff2) format("woff2");font-weight:700;font-display:swap}
+
+:root{
+  --ink:#0b0406; --velvet:#4a0c16; --velvet-deep:#1d0509;
+  --brass:#e8b04a; --brass-hi:#ffe3a1; --brass-lo:#7a4e18;
+  --paper:#f3e8cf; --paper-2:#e6d6b0; --paper-ink:#2b1a12; --stamp:#e2483a;
+  --text:#f7ecd8; --muted:#c3ab8d; --dim:#80695a;
+  --display:"Xiaowei","Songti SC","STSong",serif;
+  --marquee:"Limelight","Xiaowei",serif;
+  --mono:"Courier Prime","Courier New",monospace;
+  --body:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --gap:10px;
+}
+*{box-sizing:border-box}
+html{background:var(--ink);scroll-behavior:smooth}
+body{
+  margin:0;min-height:100vh;color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;
+  padding:0 16px 140px;overflow-x:hidden;
+  background:
+    radial-gradient(110% 55% at 50% -5%,rgba(255,196,96,.22),transparent 60%),
+    radial-gradient(140% 90% at 50% 120%,rgba(0,0,0,.9),transparent 60%),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.5) 0,rgba(0,0,0,0) 34px,rgba(255,220,200,.05) 52px,rgba(0,0,0,0) 70px,rgba(0,0,0,.5) 104px),
+    linear-gradient(180deg,var(--velvet) 0%,var(--velvet-deep) 60%,var(--ink) 100%);
+  background-attachment:fixed;
+}
+/* 胶片颗粒 */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.09;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:1240px;margin:0 auto}
+
+/* ============ 灯牌 ============ */
+.marquee{
+  position:relative;max-width:780px;margin:34px auto 0;padding:30px 34px 26px;text-align:center;border-radius:22px;
+  background:radial-gradient(120% 140% at 50% 0%,#2a120a,#100604 70%);
+  box-shadow:0 0 0 2px var(--brass-lo),0 0 0 8px #1b0c07,0 0 0 10px var(--brass-lo),0 40px 90px rgba(0,0,0,.65),0 0 140px rgba(255,190,90,.16);
+}
+.marquee::before,.marquee::after{
+  content:"";position:absolute;inset:9px;border-radius:15px;padding:7px;pointer-events:none;
+  background:radial-gradient(circle,var(--brass-hi) 0 2.6px,rgba(255,200,110,.35) 3.4px,transparent 4.6px) 0 0/22px 22px;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  filter:drop-shadow(0 0 4px rgba(255,200,100,.9));
+  animation:chase 1.1s steps(1) infinite;
+}
+.marquee::after{background-position:11px 11px;animation-delay:-.55s}
+@keyframes chase{0%{opacity:1}50%{opacity:.18}}
+.kicker{font-family:var(--marquee);letter-spacing:.32em;font-size:13px;color:var(--brass)}
+.marquee h1{
+  margin:10px 0 6px;font-family:var(--display);font-weight:400;font-size:clamp(44px,9vw,92px);line-height:1.05;letter-spacing:.06em;
+  color:var(--brass-hi);text-shadow:0 0 6px rgba(255,214,140,.65),0 0 26px rgba(255,170,60,.5),0 0 60px rgba(255,140,40,.25);
+}
+.marquee p{margin:0;color:var(--muted);font-size:15px;line-height:1.7}
+.acts{display:flex;justify-content:center;gap:clamp(10px,3vw,34px);margin:26px 0 8px;font-family:var(--mono);font-size:13px;color:var(--dim);letter-spacing:.08em}
+.acts span{display:flex;align-items:center;gap:8px;transition:color .4s}
+.acts b{font-family:var(--marquee);font-weight:400;font-size:18px}
+.acts span.on{color:var(--brass-hi)}
+.acts i{width:28px;height:1px;background:currentColor;opacity:.4;align-self:center}
+
+/* ============ 幕标题 ============ */
+.act{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:46px 0 22px}
+.act h2{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(26px,4vw,38px);letter-spacing:.06em;line-height:1.2}
+.act h2 small{display:block;font-family:var(--marquee);font-size:12px;letter-spacing:.3em;color:var(--brass);margin-bottom:8px}
+.act p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.7;max-width:560px}
+.ghost{
+  border:1px solid rgba(232,176,74,.55);background:rgba(20,6,4,.5);color:var(--brass-hi);border-radius:999px;padding:10px 20px;
+  font-size:14px;letter-spacing:.05em;transition:background .2s,border-color .2s,transform .2s;white-space:nowrap;
+}
+.ghost:hover{background:rgba(232,176,74,.14);border-color:var(--brass)}
+.ghost:active{transform:scale(.97)}
+.ghost[aria-pressed="true"]{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+
+/* ============ 第一幕：选片 ============ */
+.reel{display:grid;grid-template-columns:repeat(6,1fr);gap:30px 22px}
+.film{position:relative;border:0;padding:0;background:none;text-align:left;animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.frame{
+  position:relative;aspect-ratio:2/3;border-radius:6px;overflow:hidden;background:#1a0b08;
+  box-shadow:0 18px 30px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);
+  transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s;
+}
+.frame img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .35s}
+.frame::after{content:"";position:absolute;inset:0;background:radial-gradient(90% 60% at 50% 0%,rgba(255,230,180,.25),transparent 60%);opacity:0;transition:opacity .35s}
+.film:hover .frame,.film:focus-visible .frame{transform:translateY(-8px) rotate(-.8deg);box-shadow:0 28px 40px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.1)}
+.film:hover .frame::after{opacity:1}
+.film:focus-visible{outline:none}
+.film:focus-visible .frame{outline:2px solid var(--brass);outline-offset:4px}
+.placard{margin-top:12px}
+.placard b{display:block;font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.04em;line-height:1.3}
+.placard span{display:block;margin-top:3px;font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.film.on .frame{box-shadow:0 0 0 2px var(--brass),0 0 34px color-mix(in srgb,var(--c) 70%,transparent),0 20px 34px rgba(0,0,0,.6)}
+.film.on .frame img{filter:saturate(1.15) brightness(.82)}
+.stamp{
+  position:absolute;left:50%;top:44%;width:66%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;text-align:center;
+  border:3px solid var(--stamp);box-shadow:inset 0 0 0 3px rgba(10,2,2,.6),inset 0 0 0 5px var(--stamp);
+  background:radial-gradient(circle,rgba(25,4,4,.72) 55%,rgba(25,4,4,.5));color:var(--stamp);
+  transform:translate(-50%,-50%) rotate(-14deg) scale(1.7);opacity:0;pointer-events:none;
+  transition:transform .28s cubic-bezier(.3,1.6,.5,1),opacity .2s;
+}
+.stamp b{font-family:var(--display);font-weight:400;font-size:clamp(22px,2.6vw,32px);line-height:1;letter-spacing:.1em}
+.stamp i{display:block;font-style:normal;font-family:var(--mono);font-weight:700;font-size:10px;letter-spacing:.3em;margin-top:4px}
+.film.on .stamp{opacity:.95;transform:translate(-50%,-50%) rotate(-14deg) scale(1)}
+
+/* ============ 票夹 ============ */
+.tray{
+  position:fixed;z-index:20;left:50%;bottom:max(14px,env(safe-area-inset-bottom));width:min(980px,calc(100% - 24px));
+  transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:12px 14px 12px 26px;
+  background:linear-gradient(180deg,var(--paper),var(--paper-2));color:var(--paper-ink);border-radius:10px;
+  box-shadow:0 24px 60px rgba(0,0,0,.65),0 0 0 1px rgba(0,0,0,.2);
+  -webkit-mask:radial-gradient(circle at 0 50%,transparent 11px,#000 12px) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,transparent 11px,#000 12px) right/51% 100% no-repeat;
+  mask:radial-gradient(circle at 0 50%,transparent 11px,#000 12px) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,transparent 11px,#000 12px) right/51% 100% no-repeat;
+  transition:transform .5s cubic-bezier(.5,0,.2,1);
+}
+.tray.away{transform:translate(-50%,180%)}
+.tray-label{flex:none;line-height:1.15}
+.tray-label b{display:block;font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.08em}
+.tray-label span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;opacity:.7}
+.stubs{flex:1;min-width:0;display:flex;gap:8px;overflow-x:auto;padding:4px 2px;border-left:2px dashed rgba(43,26,18,.3);padding-left:14px;scrollbar-width:none}
+.stubs::-webkit-scrollbar{display:none}
+.stub{flex:none;position:relative;width:36px;height:54px;border-radius:3px;overflow:hidden;border:0;padding:0;background:#2a1a12;box-shadow:0 3px 8px rgba(0,0,0,.3);animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+.stub img{width:100%;height:100%;object-fit:cover;display:block}
+.stub::after{content:"×";position:absolute;inset:0;display:grid;place-items:center;background:rgba(43,26,18,.75);color:var(--paper);font-size:20px;opacity:0;transition:opacity .15s}
+.stub:hover::after{opacity:1}
+@keyframes pop{from{transform:scale(.4);opacity:0}}
+.tray-hint{font-size:13px;opacity:.75;white-space:nowrap;align-self:center}
+.go{
+  flex:none;border:0;border-radius:8px;padding:14px 22px;background:var(--paper-ink);color:var(--brass-hi);
+  font-family:var(--display);font-size:20px;letter-spacing:.12em;transition:transform .2s,opacity .2s,background .2s;
+}
+.go:not(:disabled):hover{background:#000;transform:translateY(-1px)}
+.go:disabled{opacity:.35;cursor:not-allowed}
+
+/* ============ 第三幕：海报墙 ============ */
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:12px;height:18px;border-radius:2px;display:inline-block}
+.legend .l1{background:var(--brass);box-shadow:0 0 10px var(--brass)}
+.legend .l2{background:#5b3a2b;outline:1.5px solid var(--stamp)}
+.legend .l3{background:#2a1d18}
+.tools{display:flex;gap:10px;flex-wrap:wrap}
+.stage{position:relative;margin:0 calc(50% - 50vw);padding:0 max(16px,calc(50vw - 700px))}
+.stage::before{ /* 顶灯 */
+  content:"";position:absolute;left:50%;top:-80px;width:min(1100px,100%);height:420px;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(50% 60% at 50% 0%,rgba(255,215,140,.16),transparent 70%);
+}
+.wall{position:relative;display:grid;gap:var(--gap);grid-auto-flow:dense}
+.tile{
+  position:relative;border:0;padding:0;border-radius:5px;overflow:hidden;background:#140806;text-align:left;
+  box-shadow:0 10px 24px rgba(0,0,0,.5);transition:box-shadow .8s,transform .3s;isolation:isolate;
+}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) brightness(.26) contrast(1.15);transition:filter .9s}
+.tile:hover img{filter:grayscale(.6) brightness(.5)}
+.tile:hover{transform:translateY(-3px);z-index:2}
+.tile:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+.tile.lit.on img{filter:none;animation:bulb .9s}
+.tile.lit.on{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--brass) 80%,transparent),0 0 30px color-mix(in srgb,var(--c) 75%,transparent),0 14px 30px rgba(0,0,0,.55)}
+.tile.lit.on.r1{box-shadow:0 0 0 2px var(--brass-hi),0 0 70px color-mix(in srgb,var(--c) 85%,transparent),0 0 140px rgba(255,200,110,.25)}
+@keyframes bulb{0%{filter:brightness(.3) grayscale(1)}12%{filter:brightness(1.6)}22%{filter:brightness(.4) grayscale(.6)}38%{filter:brightness(1.35)}100%{filter:none}}
+.tile.mine img{filter:sepia(.5) brightness(.55)}
+.tile.mine{box-shadow:0 0 0 1.5px var(--stamp),0 10px 24px rgba(0,0,0,.5)}
+.cap{
+  position:absolute;inset:auto 0 0 0;padding:28px 9px 9px;background:linear-gradient(transparent,rgba(8,3,2,.94) 58%);
+  opacity:0;transform:translateY(8px);transition:opacity .6s .2s,transform .6s .2s;
+}
+.tile.on .cap{opacity:1;transform:none}
+.cap .rk{font-family:var(--marquee);font-size:13px;color:var(--brass-hi);letter-spacing:.06em}
+.cap b{display:block;font-family:var(--display);font-weight:400;font-size:16px;line-height:1.25;margin-top:2px;letter-spacing:.03em}
+.cap .why{margin-top:6px;font-family:var(--mono);font-size:11.5px;color:#e9d9bf;line-height:1.5}
+.cap .meter{margin-top:6px;height:3px;border-radius:2px;background:rgba(255,255,255,.15);overflow:hidden}
+.cap .meter s{display:block;height:100%;background:linear-gradient(90deg,var(--brass-lo),var(--brass-hi))}
+.tile.n3 .cap{padding:60px 18px 18px}
+.tile.n3 .cap .rk{font-size:20px}
+.tile.n3 .cap b{font-size:clamp(26px,3vw,40px)}
+.tile.n3 .cap .why{font-size:14px}
+.tile.n2 .cap b{font-size:22px}
+.tile.n1 .cap .why{display:none}
+.badge{
+  position:absolute;top:7px;right:7px;z-index:2;min-width:30px;padding:3px 7px;border-radius:999px;text-align:center;
+  font-family:var(--mono);font-weight:700;font-size:12px;background:rgba(10,4,3,.75);color:var(--muted);
+  border:1px solid rgba(255,255,255,.12);opacity:0;transform:scale(.8);transition:opacity .3s,transform .3s;
+}
+.tile.on .badge{opacity:1;transform:none;background:var(--brass);color:var(--ink);border-color:var(--brass-hi)}
+.wall.scores .badge{opacity:1;transform:none}
+.tag-mine{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-12deg);padding:4px 10px;border:2px solid var(--stamp);border-radius:4px;
+  color:var(--stamp);font-family:var(--display);font-size:clamp(14px,1.6vw,19px);letter-spacing:.12em;background:rgba(20,3,3,.6);white-space:nowrap
+}
+.filler{
+  border-radius:5px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:10px;
+  border:1px solid rgba(232,176,74,.28);background:repeating-linear-gradient(135deg,rgba(232,176,74,.05) 0 8px,transparent 8px 16px),#120705;color:var(--muted);
+}
+.filler b{font-family:var(--marquee);font-weight:400;font-size:clamp(26px,3.4vw,42px);color:var(--brass);line-height:1}
+.filler span{margin-top:8px;font-size:12px;letter-spacing:.1em}
+.fallback{width:100%;height:100%;display:grid;place-items:center;padding:12px;text-align:center;font-family:var(--display);font-size:20px;color:var(--brass-hi);background:linear-gradient(160deg,#4a1a14,#140806)}
+
+/* ============ 幕后：算法 ============ */
+.backstage{display:grid;grid-template-columns:1.1fr 1fr;gap:22px}
+.panel{position:relative;border-radius:14px;padding:24px 26px;background:linear-gradient(180deg,rgba(24,9,6,.92),rgba(14,5,4,.92));box-shadow:0 0 0 1px rgba(232,176,74,.25),0 30px 60px rgba(0,0,0,.45)}
+.panel h3{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:.06em;color:var(--brass-hi)}
+.panel .note{margin:0 0 18px;font-size:13px;color:var(--muted)}
+.prow{display:grid;grid-template-columns:84px 1fr 34px;align-items:center;gap:12px;padding:7px 0;border-top:1px dashed rgba(232,176,74,.14)}
+.prow:first-of-type{border-top:0}
+.prow .t{font-family:var(--display);font-size:19px;letter-spacing:.05em;white-space:nowrap}
+.prow .n{font-family:var(--mono);font-weight:700;font-size:18px;text-align:right;color:var(--brass)}
+.prow.zero .t,.prow.zero .n{color:var(--dim)}
+.bulbs{display:flex;gap:5px;flex-wrap:wrap}
+.bulbs i{width:13px;height:13px;border-radius:50%;background:#2c1a14;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.bulbs i.y{background:radial-gradient(circle at 35% 35%,#fff6d8,var(--brass) 55%,var(--brass-lo));box-shadow:0 0 9px rgba(255,200,90,.85);animation:pop .4s backwards}
+.steps{display:flex;flex-direction:column;gap:18px;counter-reset:s}
+.step{display:grid;grid-template-columns:48px 1fr;gap:14px}
+.step .num{font-family:var(--marquee);font-size:46px;line-height:.9;color:var(--brass);text-shadow:0 0 18px rgba(255,180,70,.4)}
+.step h4{margin:2px 0 6px;font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.06em}
+.step p{margin:0;font-size:14px;line-height:1.75;color:var(--muted)}
+.eq{
+  margin-top:10px;padding:10px 12px;border-radius:6px;background:var(--paper);color:var(--paper-ink);font-family:var(--mono);font-size:13.5px;line-height:1.6;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)
+}
+.eq em{font-style:normal;font-weight:700}
+.eq .z{opacity:.45}
+.again{display:flex;justify-content:center;margin:40px 0 10px}
+
+/* ============ 票根弹窗 ============ */
+dialog.ticket{
+  border:0;padding:0;background:transparent;color:var(--paper-ink);width:min(760px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:visible;
+}
+dialog.ticket::backdrop{background:rgba(5,1,2,.78);backdrop-filter:blur(4px)}
+dialog.ticket[open]{animation:tk .45s cubic-bezier(.2,.9,.25,1.15)}
+@keyframes tk{from{opacity:0;transform:translateY(30px) rotate(-2deg) scale(.95)}}
+.tk{
+  display:grid;grid-template-columns:230px 1fr;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,var(--paper),var(--paper-2));
+  box-shadow:0 40px 90px rgba(0,0,0,.7);
+  -webkit-mask:radial-gradient(circle at 230px 0,transparent 13px,#000 14px) top/100% 51% no-repeat,radial-gradient(circle at 230px 100%,transparent 13px,#000 14px) bottom/100% 51% no-repeat;
+  mask:radial-gradient(circle at 230px 0,transparent 13px,#000 14px) top/100% 51% no-repeat,radial-gradient(circle at 230px 100%,transparent 13px,#000 14px) bottom/100% 51% no-repeat;
+}
+.tk-poster{position:relative;background:#1a0b08}
+.tk-poster img,.tk-poster .fallback{width:100%;height:100%;object-fit:cover;display:block;min-height:340px}
+.tk-body{position:relative;padding:22px 26px 22px 30px;border-left:2px dashed rgba(43,26,18,.35);max-height:calc(100vh - 40px);overflow:auto}
+.tk-top{display:flex;justify-content:space-between;padding-right:34px;font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:.2em;opacity:.65}
+.tk-body h3{margin:12px 0 2px;font-family:var(--display);font-weight:400;font-size:34px;letter-spacing:.05em;line-height:1.15}
+.tk-sub{font-family:var(--mono);font-size:12.5px;opacity:.65}
+.tk-rows{margin:16px 0 10px;border-top:1.5px solid rgba(43,26,18,.75);border-bottom:1.5px solid rgba(43,26,18,.75)}
+.tk-row{display:grid;grid-template-columns:84px 1fr 44px;gap:10px;align-items:center;padding:8px 0;border-top:1px dashed rgba(43,26,18,.25)}
+.tk-row:first-child{border-top:0}
+.tk-row .t{font-family:var(--display);font-size:19px;white-space:nowrap}
+.tk-row .n{font-family:var(--mono);font-weight:700;text-align:right;font-size:15px}
+.tk-row .bulbs i:not(.y){background:rgba(43,26,18,.15);box-shadow:none}
+.tk-row .bulbs i.y{box-shadow:0 0 6px rgba(200,130,30,.7)}
+.tk-row.zero{opacity:.45}
+.tk-sum{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:var(--mono)}
+.tk-sum .f{font-size:15px}
+.tk-sum .s{font-family:var(--mono);font-weight:700;font-size:40px;line-height:1}.tk-sum .s small{font-size:15px;margin-left:3px}
+.tk-verdict{
+  margin-top:14px;padding:10px 12px;border-radius:6px;font-size:14px;line-height:1.7;background:rgba(43,26,18,.07);
+}
+.tk-verdict b{font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.06em;margin-right:6px}
+.tk-verdict.lit b{color:#9a5b0b}.tk-verdict.mine b{color:#b3291d}.tk-verdict.dark b{color:#5b4a40}
+.tk-close{position:absolute;top:12px;right:14px;border:0;background:none;font-size:24px;line-height:1;color:var(--paper-ink);opacity:.5;padding:4px 6px}
+.tk-close:hover{opacity:1}
+.tk-close:focus{outline:none}.tk-close:focus-visible{outline:2px solid var(--brass-lo);border-radius:4px}
+.tk-body:focus{outline:none}
+
+/* ============ 响应式 ============ */
+@media (max-width:1080px){.reel{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:820px){
+  .backstage{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  body{padding-bottom:130px}
+  .marquee{padding:26px 18px 20px;margin-top:20px}
+  .reel{grid-template-columns:repeat(3,1fr);gap:20px 12px}
+  .placard b{font-size:15px}
+  .placard span{font-size:10px}
+  .tray{gap:10px;padding:10px 10px 10px 20px}
+  .tray-label b{font-size:18px}
+  .tray-hint{display:none}
+  .go{padding:12px 14px;font-size:17px}
+  :root{--gap:6px}
+  .cap{padding:20px 6px 6px}.cap b{font-size:13px}.cap .rk{font-size:11px}
+  .tile.n2 .cap b{font-size:16px}
+  .tile.n3 .cap{padding:40px 10px 10px}.tile.n3 .cap b{font-size:24px}.tile.n3 .cap .why{font-size:12px}
+  .badge{font-size:10px;padding:2px 5px;min-width:24px;top:4px;right:4px}
+  .tk{grid-template-columns:1fr;-webkit-mask:none;mask:none}
+  .tk-poster{height:200px}.tk-poster img{min-height:0}
+  .tk-body{border-left:0;border-top:2px dashed rgba(43,26,18,.35);padding:18px 18px}
+  .tk-body h3{font-size:28px}
+  .panel{padding:20px 18px}
+  .acts i{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* ============ 协同过滤实验版：追加样式 ============ */
+:root{--film:"Songti SC","STSong","Noto Serif SC","Noto Serif CJK SC","Source Han Serif SC","SimSun",serif;--good:#7fd17a}
+.placard b,.cap b,.tk-body h3,.prow .t,.stub-n,.fallback b,.nb-name,.chip-m{font-family:var(--film);font-weight:700}
+.placard b{font-size:16.5px}
+/* 状态条：cf.py 里的函数写了没有 */
+.status{max-width:980px;margin:22px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-family:var(--mono);font-size:12px}
+.status .st{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid rgba(232,176,74,.3);background:rgba(20,6,4,.55);color:var(--muted)}
+.status .st i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.status .st.ok{color:var(--brass-hi);border-color:rgba(127,209,122,.5)}.status .st.ok i{background:var(--good);box-shadow:0 0 8px var(--good)}
+.status .st.todo i{background:#6b4a3a}
+.status .st.err{color:#ffb4a8;border-color:var(--stamp)}.status .st.err i{background:var(--stamp)}
+.status .st.k{border-color:var(--brass);color:var(--brass-hi)}
+/* 类型筛选 */
+.genres{display:flex;flex-wrap:wrap;gap:8px;margin:-6px 0 24px}
+.genres button{border:1px solid rgba(232,176,74,.3);background:rgba(20,6,4,.5);color:var(--muted);border-radius:999px;padding:6px 14px;font-size:13px}
+.genres button[aria-pressed="true"]{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+/* 卡片 */
+.film{cursor:default}
+.film .frame{cursor:pointer}
+.film .meta{display:flex;justify-content:space-between;gap:6px;margin-top:3px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.stars{display:flex;gap:2px;margin-top:8px}
+.stars button{border:0;background:none;padding:2px 1px;font-size:22px;line-height:1;color:#4a3328;transition:color .15s,transform .15s}
+.stars button.y{color:var(--brass-hi);text-shadow:0 0 10px rgba(255,200,90,.7)}
+.stars:hover button{color:var(--brass)}
+.stars button:hover~button{color:#4a3328;text-shadow:none}
+.stars button:active{transform:scale(1.25)}
+.stars .clr{font-size:13px;color:var(--dim);margin-left:auto;align-self:center;opacity:0;padding:2px 4px}
+.film.on .stars .clr{opacity:1}
+.stamp b{font-size:clamp(20px,2.3vw,30px)}
+/* 票夹上的评分 */
+.stub-n{position:absolute;left:0;right:0;bottom:0;background:rgba(43,26,18,.85);color:var(--brass-hi);font-size:11px;text-align:center;line-height:16px;font-family:var(--mono)}
+/* 文字海报卡（没有海报图时） */
+.fallback{display:flex;flex-direction:column;justify-content:center;gap:8px;background:linear-gradient(165deg,color-mix(in srgb,var(--c,#7a2a1c) 55%,#1a0806),#120604 85%);position:relative;overflow:hidden}
+.fallback::before{content:"";position:absolute;inset:8px;border:1px solid rgba(255,227,161,.35);border-radius:3px}
+.fallback b{font-size:clamp(17px,1.6vw,24px);line-height:1.25;color:var(--brass-hi);letter-spacing:.04em;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.fallback span{font-family:var(--mono);font-size:11px;color:var(--paper-2);opacity:.75;letter-spacing:.05em}
+.fallback em{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--brass);opacity:.8}
+.tile .fallback b{font-size:clamp(12px,1.1vw,17px)}
+.tile.n3 .fallback b{font-size:clamp(22px,2.6vw,38px)}
+.tile.n2 .fallback b{font-size:clamp(16px,1.6vw,24px)}
+.tile .fallback{filter:none}
+.tile:not(.on) .fallback{filter:grayscale(1) brightness(.4)}
+.tile.mine .fallback{filter:sepia(.4) brightness(.6)}
+.tile.on .fallback{animation:bulb .9s}
+.tag-mine{font-family:var(--film);font-weight:700}
+/* 加载 / 错误 */
+.loading{display:grid;place-items:center;min-height:50vh;text-align:center;color:var(--muted)}
+.loading .reel-ico{width:90px;height:90px;border-radius:50%;margin:0 auto 18px;border:6px solid var(--brass-lo);
+  background:radial-gradient(circle,var(--ink) 0 9px,transparent 10px),conic-gradient(from 0deg,var(--brass) 0 12%,transparent 0 25%,var(--brass) 0 37%,transparent 0 50%,var(--brass) 0 62%,transparent 0 75%,var(--brass) 0 87%,transparent 0);
+  animation:spin 1.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.errbox{max-width:820px;margin:40px auto;padding:24px 28px;border-radius:12px;background:linear-gradient(180deg,var(--paper),var(--paper-2));color:var(--paper-ink)}
+.errbox h3{margin:0 0 8px;font-family:var(--film);font-size:24px;color:#b3291d}
+.errbox p{margin:6px 0;line-height:1.7}
+.errbox code{font-family:var(--mono);background:rgba(43,26,18,.1);padding:1px 6px;border-radius:4px}
+.errbox details{margin-top:12px}.errbox pre{white-space:pre-wrap;font-size:12px;background:#1b0d08;color:#f3e8cf;padding:12px;border-radius:6px;max-height:300px;overflow:auto}
+.errbox .ghost{color:var(--paper-ink);border-color:var(--paper-ink);background:transparent;margin-top:12px}
+/* 幕后 */
+.backstage{grid-template-columns:1fr 1fr}
+.panel.wide{grid-column:1/-1}
+.nb{display:grid;grid-template-columns:auto 1fr auto;gap:6px 14px;align-items:center;padding:12px 0;border-top:1px dashed rgba(232,176,74,.16)}
+.nb:first-of-type{border-top:0}
+.nb-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:12px;color:var(--ink);background:radial-gradient(circle at 35% 30%,#fff3cf,var(--brass) 60%,var(--brass-lo))}
+.nb-name{font-size:17px;letter-spacing:.04em}
+.nb-name small{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--dim);margin-left:8px}
+.nb-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:6px;overflow:hidden}
+.nb-bar s{display:block;height:100%;background:linear-gradient(90deg,var(--brass-lo),var(--brass-hi))}
+.nb-sim{font-family:var(--mono);font-weight:700;font-size:20px;color:var(--brass)}
+.nb-common{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px}
+.chip-m{font-size:12.5px;padding:3px 8px;border-radius:4px;background:rgba(232,176,74,.1);border:1px solid rgba(232,176,74,.2);color:var(--text);font-weight:400}
+.chip-m i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--brass-hi);margin-left:4px}
+.fx7{font-family:var(--mono);font-size:14px;line-height:1.9;padding:14px 16px;border-radius:8px;background:var(--paper);color:var(--paper-ink);overflow-x:auto}
+.fx7 b{font-size:16px}
+.fx7 .big{font-size:26px;font-weight:700;color:#9a3b10}
+.ctb{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;margin-top:14px}
+.ctb th{font-family:var(--body);font-weight:600;font-size:12px;color:var(--brass);text-align:right;padding:6px 8px;border-bottom:1px solid rgba(232,176,74,.35)}
+.ctb th:first-child,.ctb td:first-child{text-align:left}
+.ctb td{text-align:right;padding:5px 8px;border-bottom:1px dashed rgba(232,176,74,.12);color:var(--text)}
+.ctb td.pos{color:var(--good)}.ctb td.neg{color:#ff8f7f}
+.ctb tfoot td{border-top:1.5px solid rgba(232,176,74,.5);border-bottom:0;font-weight:700;color:var(--brass-hi)}
+.ctb .more td{color:var(--dim);text-align:center;font-family:var(--body)}
+.picker{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
+.picker button{border:1px solid rgba(232,176,74,.3);background:transparent;color:var(--muted);border-radius:6px;padding:4px 10px;font-size:13px;font-family:var(--film);font-weight:700}
+.picker button[aria-pressed="true"]{background:var(--brass);color:var(--ink)}
+.curve svg{width:100%;height:auto;display:block}
+.curve .ax{stroke:rgba(232,176,74,.35);stroke-width:1}
+.curve .gl{stroke:rgba(232,176,74,.08)}
+.curve text{fill:var(--muted);font-family:var(--mono);font-size:11px}
+.curve .fold{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1}
+.curve .mean{fill:none;stroke:var(--brass-hi);stroke-width:2.5}
+.curve .dot{fill:var(--brass)}
+.curve .best{fill:none;stroke:var(--good);stroke-width:2.5}
+.curve .base{stroke:#ff8f7f;stroke-dasharray:5 5;stroke-width:1.5}
+.curve .now{stroke:var(--good);stroke-dasharray:2 4;stroke-width:1.5}
+.curve .lb{font-family:var(--body);font-size:12px}
+.empty-note{padding:18px;border:1px dashed rgba(232,176,74,.35);border-radius:8px;color:var(--muted);font-size:14px;line-height:1.7}
+.empty-note code{font-family:var(--mono);color:var(--brass-hi)}
+.tk-pred{display:flex;align-items:baseline;gap:12px;margin:16px 0 4px;font-family:var(--mono)}
+.tk-pred .s{font-size:44px;font-weight:700;line-height:1}
+.tk-pred .s small{font-size:15px}
+.tk-stars{font-size:22px;letter-spacing:2px;color:#b07a1e}
+.tk .ctb{font-size:12px}.tk .ctb th{color:#7a4e18;border-bottom-color:rgba(43,26,18,.4)}.tk .ctb td{color:var(--paper-ink);border-bottom-color:rgba(43,26,18,.12)}
+.tk .ctb td.pos{color:#2f7d2a}.tk .ctb td.neg{color:#b3291d}.tk .ctb tfoot td{color:var(--paper-ink);border-top-color:rgba(43,26,18,.5)}
+.tk .ctb .more td{color:#7a6a5a}
+.tk-info{font-size:13px;line-height:1.7;opacity:.85;margin-top:6px}
+@media (max-width:820px){.backstage{grid-template-columns:1fr}}
+@media (max-width:640px){.stars button{font-size:19px}.nb{grid-template-columns:auto 1fr}.nb-sim{grid-column:2}}
+.film .fallback{justify-content:flex-end;padding-bottom:12%}
+.tile .fallback{justify-content:flex-start;padding-top:16%}
+.tile.n3 .fallback,.tile.n2 .fallback{padding-top:22%}
+.tk-poster .fallback{display:flex;justify-content:center}
+.tk-poster .fallback b{font-size:30px}
+.curve .clip{fill:var(--brass)}
+/* 算法切换 */
+.algo-bar{position:sticky;top:10px;z-index:15;display:flex;gap:4px;width:max-content;max-width:100%;margin:34px auto 0;padding:5px;border-radius:999px;
+  background:rgba(14,5,4,.88);backdrop-filter:blur(6px);box-shadow:0 0 0 1px rgba(232,176,74,.45),0 14px 30px rgba(0,0,0,.5)}
+.algo-bar button{border:0;border-radius:999px;padding:9px 22px;background:transparent;color:var(--muted);text-align:center;line-height:1.2;transition:background .25s,color .25s}
+.algo-bar button b{display:block;font-family:var(--film);font-size:17px;letter-spacing:.06em}
+.algo-bar button span{display:block;font-size:11.5px;opacity:.75;margin-top:2px}
+.algo-bar button[aria-selected="true"]{background:var(--brass);color:var(--ink)}
+.algo-bar button:disabled{opacity:.35;cursor:not-allowed}
+.sim-row{display:grid;grid-template-columns:44px 1fr 64px;gap:12px;align-items:center;padding:8px 0;border-top:1px dashed rgba(232,176,74,.16)}
+.sim-row:first-child{border-top:0}
+.sim-row .th{width:44px;aspect-ratio:2/3;border-radius:3px;overflow:hidden;background:#1a0b08}
+.sim-row .th img,.sim-row .th .fallback{width:100%;height:100%;object-fit:cover}
+.sim-row .th .fallback b{font-size:9px}.sim-row .th .fallback span,.sim-row .th .fallback em{display:none}
+.sim-row .t{font-family:var(--film);font-weight:700;font-size:16px}
+.sim-row .t small{display:block;font-family:var(--body);font-weight:400;font-size:12px;color:var(--dim);margin-top:3px}
+.sim-row .t small.y{color:var(--good)}
+.sim-row .nb-sim{font-size:17px;text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="marquee">
+    <div class="kicker">MOVIELENS · COLLABORATIVE FILTERING</div>
+    <h1>今晚看什么？</h1>
+    <p id="lede">给看过的电影打几颗星，协同过滤会从 943 位真实观众的评分里，替你挑下一部。</p>
+  </header>
+  <div class="status" id="status"></div>
+  <nav class="acts" aria-label="步骤">
+    <span id="act1" class="on"><b>01</b>打分</span><i></i>
+    <span id="act2"><b>02</b>海报墙</span><i></i>
+    <span id="act3"><b>03</b>幕后算法</span>
+  </nav>
+
+  <!-- 第一幕 -->
+  <section id="pickView">
+    <div class="act">
+      <div>
+        <h2><small>ACT ONE</small>第一幕 · 给看过的电影打分</h2>
+        <p>点星星打 1～5 分，没看过的跳过。至少 3 部，打得越多、好坏都打，推荐越准。打过的都收在下方票夹里。</p>
+      </div>
+      <button class="ghost" id="shuffle">↻ 换一批</button>
+    </div>
+    <div class="genres" id="genres"></div>
+    <div class="reel" id="reel"></div>
+  </section>
+
+  <!-- 加载 / 错误 -->
+  <section id="loadView" hidden><div class="loading"><div><div class="reel-ico"></div><p id="loadMsg">放映机预热中……</p></div></div></section>
+  <section id="errView" hidden></section>
+
+  <!-- 第二、三幕 -->
+  <section id="resultView" hidden>
+    <div class="algo-bar" id="algoBar" role="tablist" aria-label="切换算法">
+      <button role="tab" data-a="user"><b>基于用户</b><span>找口味像你的人</span></button>
+      <button role="tab" data-a="item"><b>基于物品</b><span>找像你爱看的片</span></button>
+    </div>
+    <div class="act">
+      <div>
+        <h2><small>ACT TWO</small>整面海报墙</h2>
+        <p id="wallNote"></p>
+        <div class="legend">
+          <span><i class="l1"></i>为你点亮（预测分前 10）</span><span><i class="l2"></i>你打过分的</span><span><i class="l3"></i>没被推荐</span>
+        </div>
+      </div>
+      <div class="tools">
+        <button class="ghost" id="toggleScores" aria-pressed="false">显示每部预测分</button>
+        <button class="ghost" id="toBackstage">算法是怎么猜的 ↓</button>
+      </div>
+    </div>
+    <div class="stage"><div class="wall" id="wall"></div></div>
+    <p style="text-align:center;color:var(--dim);font-size:13px;margin:18px 0 0">点任意一张海报，看看它的「算分票根」</p>
+
+    <div class="act" id="backstage">
+      <div>
+        <h2><small>ACT THREE</small>幕后 · 算法是怎么猜的</h2>
+        <p id="backNote"></p>
+      </div>
+    </div>
+    <div class="backstage">
+      <div class="panel">
+        <h3 id="nbTitle"></h3>
+        <p class="note" id="nbNote"></p>
+        <div id="nbList"></div>
+      </div>
+      <div class="panel">
+        <h3>预测分是怎么算的</h3>
+        <p class="note" id="fxNote"></p>
+        <div class="picker" id="picker"></div>
+        <div id="fxBox"></div>
+      </div>
+      <div class="panel wide">
+        <h3>K 取多少？—— 测试集误差</h3>
+        <p class="note" id="curveNote"></p>
+        <div class="curve" id="curve"></div>
+      </div>
+    </div>
+    <div class="again"><button class="ghost" id="again">↺ 改一改评分，重新推荐</button></div>
+  </section>
+</div>
+
+<!-- 票夹 -->
+<div class="tray" id="tray">
+  <div class="tray-label"><b>票夹</b><span id="trayCount">0 部</span></div>
+  <div class="stubs" id="stubs"></div>
+  <div class="tray-hint" id="trayHint">再打 3 部就能开映</div>
+  <button class="go" id="go" disabled>开映 →</button>
+</div>
+
+<!-- 票根 -->
+<dialog class="ticket" id="ticket"></dialog>
+
+<script>
+"use strict";
+/* 网页只负责"收集评分"和"展示结果"；两个推荐算法在 user_cf.py / item_cf.py 里，由 main.py 启动的 web_server.py 调用 */
+const BATCH = 12, MIN_PICK = 3, LIT_MAX = 10;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const f2 = x => (+x).toFixed(2), f3 = x => (+x).toFixed(3);
+const WORD = ["", "烂片", "一般", "还行", "推荐", "神作"];
+const GCOLOR = { 动作: "#c0392b", 冒险: "#d35400", 动画: "#e67e22", 儿童: "#f1c40f", 喜剧: "#e8b04a", 犯罪: "#7f8c8d", 剧情: "#8e6e53",
+  奇幻: "#9b59b6", 恐怖: "#5d1a1a", 歌舞: "#e84393", 悬疑: "#34495e", 爱情: "#d63031", 科幻: "#0984e3", 惊悚: "#2d3436", 战争: "#556b2f", 西部: "#a0522d", 黑色电影: "#222" };
+const ALGO = {
+  user: { name: "基于用户的协同过滤", short: "基于用户", eq: "7.5" },
+  item: { name: "基于物品的协同过滤", short: "基于物品", eq: "7.7′" },
+};
+
+let MOVIES = [], byId = new Map();
+const rated = new Map();           // movie_id -> 1..5（跨批次保留）
+let genre = "全部", data = null, cur = "user", result = null, wallCols = 0, revealed = false, fxPick = null;
+
+function posterEl(m) {
+  if (m.poster) {
+    const img = new Image();
+    img.src = m.poster; img.alt = m.name; img.loading = "lazy"; img.decoding = "async";
+    img.onerror = () => img.replaceWith(fallbackEl(m));
+    return img;
+  }
+  return fallbackEl(m);
+}
+function fallbackEl(m) {
+  const d = document.createElement("div"); d.className = "fallback"; d.style.setProperty("--c", m.color);
+  d.innerHTML = `<em>${m.year}</em><b>${esc(m.name)}</b><span>${esc(m.en)}</span>`;
+  return d;
+}
+
+/* ================= 状态条：两个算法文件写到哪一步了 ================= */
+const FN = ["user_cf.compute_similarity", "user_cf.predict_rating", "item_cf.compute_similarity", "item_cf.predict_rating"];
+async function loadStatus() {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    $("status").innerHTML = FN.map(f => {
+      const v = s.functions[f] || "todo", cls = v === "ok" ? "ok" : v === "todo" ? "todo" : "err";
+      return `<span class="st ${cls}" title="${v === "ok" ? "已完成" : v === "todo" ? "还没写" : esc(v)}"><i></i>${f}</span>`;
+    }).join("") + Object.entries(s.best_k).map(([a, k]) => `<span class="st k">${ALGO[a].short} K = ${k}</span>`).join("");
+  } catch (e) { $("status").innerHTML = `<span class="st err"><i></i>没连上算法：请运行 python main.py，用它自动打开的网页（不要直接双击 index.html）</span>`; }
+}
+
+/* ================= 第一幕：打分 ================= */
+function renderGenres() {
+  const gs = ["全部", ...new Set(MOVIES.flatMap(m => m.tags))];
+  $("genres").innerHTML = gs.map(g => `<button aria-pressed="${g === genre}" data-g="${g}">${g}</button>`).join("");
+  $("genres").querySelectorAll("button").forEach(b => b.onclick = () => { genre = b.dataset.g; renderGenres(); renderReel(); });
+}
+function drawBatch() {
+  // 没打过分的优先；看过的人多的电影更可能被认出来，所以按"评分人数"加权随机
+  const pool = MOVIES.filter(m => genre === "全部" || m.tags.includes(genre));
+  const fresh = pool.filter(m => !rated.has(m.id)).map(m => [m, Math.random() ** (150 / m.n)]).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  return [...fresh, ...pool.filter(m => rated.has(m.id))].slice(0, BATCH);
+}
+function renderReel() {
+  const reel = $("reel"); reel.textContent = "";
+  drawBatch().forEach((m, i) => {
+    const b = document.createElement("div");
+    b.className = "film"; b.style.setProperty("--c", m.color); b.style.animationDelay = i * 45 + "ms"; b.dataset.id = m.id;
+    const frame = document.createElement("div"); frame.className = "frame"; frame.title = "点海报看详情";
+    frame.append(posterEl(m));
+    frame.insertAdjacentHTML("beforeend", `<div class="stamp"><div><b></b><i></i></div></div>`);
+    frame.onclick = () => openInfo(m);
+    b.append(frame);
+    b.insertAdjacentHTML("beforeend",
+      `<div class="placard"><b>${esc(m.name)}</b><div class="meta"><span>${m.year} · ${esc(m.tags.join("/"))}</span></div></div>` +
+      `<div class="stars" role="group" aria-label="给《${esc(m.name)}》打分">${[1, 2, 3, 4, 5].map(s => `<button data-s="${s}" aria-label="${s} 星">★</button>`).join("")}<button class="clr" aria-label="清除评分">清除</button></div>`);
+    b.querySelectorAll(".stars button[data-s]").forEach(x => x.onclick = () => setRate(m.id, +x.dataset.s));
+    b.querySelector(".clr").onclick = () => setRate(m.id, 0);
+    reel.append(b);
+  });
+  syncReel();
+}
+function setRate(id, s) { s ? rated.set(id, s) : rated.delete(id); syncReel(); renderTray(); }
+function syncReel() {
+  document.querySelectorAll(".film").forEach(b => {
+    const s = rated.get(+b.dataset.id) || 0;
+    b.classList.toggle("on", s > 0);
+    b.querySelectorAll(".stars button[data-s]").forEach(x => x.classList.toggle("y", +x.dataset.s <= s));
+    if (s) { b.querySelector(".stamp b").textContent = "★" + s; b.querySelector(".stamp i").textContent = WORD[s]; }
+  });
+}
+function renderTray() {
+  const n = rated.size, stubs = $("stubs");
+  $("trayCount").textContent = `${n} 部`;
+  $("trayHint").textContent = n >= MIN_PICK ? (n < 8 ? "可以开映了（多打几部更准）" : "可以开映了") : `再打 ${MIN_PICK - n} 部就能开映`;
+  $("go").disabled = n < MIN_PICK;
+  stubs.textContent = "";
+  [...rated].forEach(([id, s]) => {
+    const m = byId.get(id), b = document.createElement("button");
+    b.className = "stub"; b.title = `移除《${m.name}》（${s} 星）`; b.setAttribute("aria-label", b.title);
+    b.append(posterEl(m)); b.insertAdjacentHTML("beforeend", `<span class="stub-n">★${s}</span>`);
+    b.onclick = () => setRate(id, 0);
+    stubs.append(b);
+  });
+  stubs.scrollLeft = stubs.scrollWidth;
+}
+
+/* ================= 调用后端：保存评分 → 两个算法计算 ================= */
+async function go() {
+  show("loadView"); $("tray").classList.add("away");
+  $("loadMsg").textContent = `已把 ${rated.size} 条评分保存到 data/my_ratings.json，正在用两种协同过滤计算……`;
+  try {
+    const r = await fetch("/api/recommend", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ratings: Object.fromEntries(rated) }) });
+    const d = await r.json();
+    if (!r.ok) throw d;
+    const ok = Object.keys(ALGO).filter(a => d.results[a] && !d.results[a].error);
+    if (!ok.length) throw { error: Object.values(d.results).map(x => x.error).join("；"), trace: Object.values(d.results).map(x => x.trace || "").join("\n") };
+    data = d;
+    if (!ok.includes(cur)) cur = ok[0];
+    showResult();
+  } catch (e) { showError(e); }
+  loadStatus();
+}
+function show(id) { ["pickView", "loadView", "errView", "resultView"].forEach(v => $(v).hidden = v !== id); }
+function showError(e) {
+  const msg = e.error || String(e.message || e);
+  $("errView").innerHTML = `<div class="errbox">
+    <h3>算法运行出错了</h3>
+    <p>${esc(msg)}</p>
+    <p>改好 <code>user_cf.py</code> / <code>item_cf.py</code> 保存后，点下面的按钮再试一次（不用重新运行 main.py）。</p>
+    ${e.trace ? `<details><summary>报错详情</summary><pre>${esc(e.trace)}</pre></details>` : ""}
+    <button class="ghost" id="retry">↻ 改好了，再算一次</button> <button class="ghost" id="back">← 回去改评分</button></div>`;
+  show("errView");
+  $("retry").onclick = go; $("back").onclick = restart;
+}
+
+/* ================= 整理当前算法的结果 ================= */
+function shape(res) {
+  const list = MOVIES.map(m => {
+    const p = res.all[m.id];
+    return { m, mine: rated.has(m.id), my: rated.get(m.id), score: p ? p.score : null, detail: p || null };
+  });
+  res.recs.slice(0, LIT_MAX).forEach((r, i) => { const x = list.find(a => a.m.id === r.movie_id); x.lit = true; x.rank = i + 1; });
+  const ranked = list.filter(x => !x.mine && x.score != null).sort((a, b) => b.score - a.score);
+  ranked.forEach((x, i) => x.order = i + 1);
+  return { ...res, list, ranked, litN: Math.min(LIT_MAX, res.recs.length) };
+}
+
+/* ================= 第二幕：海报墙 ================= */
+const colsFor = w => w >= 1100 ? 10 : w >= 700 ? 8 : 4;
+function spanOf(x, cols) {
+  if (!x.lit) return 1;
+  if (x.rank === 1) return cols >= 6 ? 3 : 2;
+  if (x.rank <= 4) return cols >= 6 ? 2 : 1;
+  return 1;
+}
+function whyText(x) {
+  if (!x.detail) return "";
+  return cur === "user" ? `${x.detail.rows.length} 位相似观众的加权平均` : `你打过分的 ${x.detail.rows.length} 部相似电影`;
+}
+function buildWall() {
+  const wall = $("wall"), cols = colsFor(wall.clientWidth || innerWidth);
+  wallCols = cols; wall.style.gridTemplateColumns = `repeat(${cols},1fr)`; wall.textContent = "";
+  const top = result.list.filter(x => x.lit && x.rank <= 4).sort((a, b) => a.rank - b.rank);
+  const order = [...top, ...result.list.filter(x => !top.includes(x))];
+  const sc = result.ranked.map(x => x.score), lo = Math.min(...sc), hi = Math.max(...sc);
+  let cells = 0;
+  order.forEach(x => {
+    const n = spanOf(x, cols); cells += n * n;
+    const t = document.createElement("button");
+    t.className = `tile n${n}` + (x.lit ? ` lit r${x.rank}` : "") + (x.mine ? " mine" : "");
+    t.style.setProperty("--c", x.m.color);
+    if (n > 1) { t.style.gridColumn = `span ${n}`; t.style.gridRow = `span ${n}`; }
+    t.append(posterEl(x.m));
+    const pct = hi > lo ? Math.round(((x.score ?? lo) - lo) / (hi - lo) * 100) : 100;
+    t.insertAdjacentHTML("beforeend",
+      `<span class="badge">${x.mine ? "★" + x.my : f2(x.score)}</span>` +
+      (x.mine ? `<span class="tag-mine">你打了 ★${x.my}</span>` : "") +
+      (x.lit ? `<span class="cap"><span class="rk">No.${x.rank} · 预测 ${f2(x.score)}</span><b>${esc(x.m.name)}</b>` +
+               `<span class="meter"><s style="width:${pct}%"></s></span><span class="why">${whyText(x)}</span></span>` : ""));
+    t.setAttribute("aria-label", `${x.m.name}，${x.mine ? "你打了 " + x.my + " 星" : "预测 " + f2(x.score) + " 分" + (x.lit ? `，推荐第 ${x.rank} 名` : "")}`);
+    t.onclick = () => openTicket(x);
+    if (revealed && x.lit) t.classList.add("on");
+    wall.append(t);
+  });
+  const fills = [[MOVIES.length, "部电影"], [data.n_users - 1, "位观众"], [rated.size, "你打过分"], ["K=" + result.k, "个近邻"], ["07", "协同过滤"], [result.litN, "为你点亮"], ["★", "MovieLens"]];
+  const need = (cols - cells % cols) % cols;
+  for (let i = 0; i < need; i++) {
+    const [b, s] = fills[i % fills.length], f = document.createElement("div");
+    f.className = "filler"; f.innerHTML = `<b>${b}</b><span>${s}</span>`; wall.append(f);
+  }
+  sizeRows();
+}
+function sizeRows() {
+  const wall = $("wall"), gap = parseFloat(getComputedStyle(wall).columnGap) || 10;
+  wall.style.gridAutoRows = `${Math.round((wall.clientWidth - gap * (wallCols - 1)) / wallCols * 1.5)}px`;
+}
+const rankOf = t => +(t.className.match(/\br(\d+)\b/) || [, 99])[1];
+function reveal() {
+  revealed = true;
+  [...document.querySelectorAll(".tile.lit")].sort((a, b) => rankOf(b) - rankOf(a))
+    .forEach((t, i) => setTimeout(() => t.classList.add("on"), 300 + i * 160 + (rankOf(t) === 1 ? 300 : 0)));
+}
+
+/* ================= 第三幕：幕后 ================= */
+const mname = id => esc(byId.get(id).name);
+function thumb(id) { const d = document.createElement("div"); d.className = "th"; d.append(posterEl(byId.get(id))); return d.outerHTML; }
+
+function renderLeft() {
+  if (cur === "user") {
+    const nb = result.neighbors, max = Math.max(...nb.map(v => v.sim), 1e-9);
+    $("nbTitle").textContent = "和你口味最像的观众";
+    $("nbNote").textContent = `用欧式距离把你（第 ${data.me} 号用户）和 943 位观众逐一比较（只比较两人都评过分的电影），相似度 = 1 / (1 + 距离)，下面是最高的 ${nb.length} 位。留意他们和你共同评过几部电影（思考题 1）。`;
+    $("nbList").innerHTML = nb.map(v => `<div class="nb">
+        <div class="nb-av">#${v.user}</div>
+        <div><div class="nb-name">${v.user} 号观众<small>评过 ${v.n_rated} 部 · 和你共同评过 ${v.common.length} 部</small></div>
+          <div class="nb-bar"><s style="width:${v.sim / max * 100}%"></s></div></div>
+        <div class="nb-sim">${f3(v.sim)}</div>
+        <div class="nb-common">${v.common.slice(0, 8).map(c => `<span class="chip-m">${mname(c.movie_id)}<i>你${c.me}/TA${c.them}</i></span>`).join("")}${v.common.length > 8 ? `<span class="chip-m">…还有 ${v.common.length - 8} 部</span>` : ""}</div>
+      </div>`).join("");
+  } else {
+    const sim = fxPick.detail.similar;
+    $("nbTitle").textContent = `和《${fxPick.m.name}》最像的电影`;
+    $("nbNote").textContent = `把每部电影的评分（矩阵的一列）当作向量，用欧式距离比较（只比较两部都评过分的观众），相似度 = 1 / (1 + 距离)。标绿的是你打过分的，它们才能参与预测。留意排在前面的是不是评分人数很少的电影（思考题 2）。`;
+    $("nbList").innerHTML = sim.map(s => `<div class="sim-row">${thumb(s.movie_id)}
+        <div class="t">${mname(s.movie_id)}<small class="${s.mine ? "y" : ""}">${s.mine ? `你打了 ★${rated.get(s.movie_id)} → 参与预测` : "你没打过分"}</small></div>
+        <div class="nb-sim">${f3(s.sim)}</div></div>`).join("");
+  }
+}
+function fxTable(d, maxRows) {
+  if (!d || !d.rows.length) return `<div class="empty-note">没有可用的近邻，预测分取默认值 ${f2(d ? d.formula : 3)}。</div>`;
+  const more = n => d.rows.length > maxRows ? `<tr class="more"><td colspan="${n}">…其余 ${d.rows.length - maxRows} 个近邻省略</td></tr>` : "";
+  if (cur === "user") {
+    const rows = d.rows.slice(0, maxRows).map(r => `<tr><td>#${r.user}</td><td>${f3(r.sim)}</td><td>${r.r}</td><td>${f3(r.sim * r.r)}</td></tr>`).join("");
+    return `<table class="ctb"><thead><tr><th>近邻观众</th><th>相似度</th><th>TA 的评分</th><th>相似度×评分</th></tr></thead><tbody>${rows}${more(4)}</tbody>
+      <tfoot><tr><td>合计（${d.rows.length} 个）</td><td>${f3(d.den)}</td><td></td><td>${f3(d.num)}</td></tr></tfoot></table>`;
+  }
+  const sg = v => (v >= 0 ? "+" : "") + v;
+  const rows = d.rows.slice(0, maxRows).map(r => `<tr><td>${mname(r.movie_id)}</td><td>${f3(r.sim)}</td><td>${r.r}</td><td>${f2(r.mean)}</td>
+      <td class="${r.dev >= 0 ? "pos" : "neg"}">${sg(f2(r.dev))}</td><td class="${r.dev >= 0 ? "pos" : "neg"}">${sg(f3(r.sim * r.dev))}</td></tr>`).join("");
+  return `<table class="ctb"><thead><tr><th>近邻电影</th><th>相似度</th><th>你的评分</th><th>电影均值</th><th>偏差</th><th>相似度×偏差</th></tr></thead><tbody>${rows}${more(6)}</tbody>
+    <tfoot><tr><td>合计（${d.rows.length} 个）</td><td>${f3(d.den)}</td><td></td><td></td><td></td><td>${sg(f3(d.num))}</td></tr></tfoot></table>`;
+}
+function fxLine(d) {
+  if (!d || !d.rows.length) return "";
+  if (cur === "user") return `<div class="fx7">预测分 = Σ(相似度 × 评分) ÷ Σ相似度<br>
+    　　　= ${f3(d.num)} ÷ ${f3(d.den)} = <span class="big">${f2(d.formula)}</span></div>`;
+  const add = d.num / d.den;
+  return `<div class="fx7">预测分 = 这部电影的均值 + Σ(相似度 × 偏差) ÷ Σ相似度<br>
+    　　　= <b>${f2(d.base)}</b> ${add >= 0 ? "+" : "−"} ${f3(Math.abs(d.num))} ÷ ${f3(d.den)}<br>
+    　　　= <b>${f2(d.base)}</b> ${add >= 0 ? "+" : "−"} ${f3(Math.abs(add))} = <span class="big">${f2(d.formula)}</span>
+    ${d.base + add > 5 || d.base + add < 1 ? "<br><small>（超出 1~5 的部分被截断）</small>" : ""}</div>`;
+}
+function renderFx() {
+  const d = fxPick.detail, A = ALGO[cur];
+  $("fxNote").innerHTML = cur === "user"
+    ? `公式 (${A.eq})：在评过这部电影的 ${d.pool} 位观众里，取和你最像的 K=${result.k} 位，把他们的评分按相似度加权平均。`
+    : `公式 (${A.eq})：在你打过分的 ${d.pool} 部电影里，取和这部片最像的 K=${result.k} 部，看<b>你自己</b>给它们打得比这些电影的均值高多少（偏差），按相似度加权平均后，加到这部电影的均值上。`;
+  const tops = result.list.filter(x => x.lit).sort((a, b) => a.rank - b.rank);
+  $("picker").innerHTML = tops.map(x => `<button aria-pressed="${x === fxPick}" data-id="${x.m.id}">No.${x.rank} ${esc(x.m.name)}</button>`).join("");
+  $("picker").querySelectorAll("button").forEach(b => b.onclick = () => { fxPick = tops.find(x => x.m.id === +b.dataset.id); renderFx(); if (cur === "item") renderLeft(); });
+  const same = Math.abs(d.formula - d.score) < 0.01;
+  $("fxBox").innerHTML = fxLine(d) + fxTable(d, 8) +
+    `<p class="note" style="margin:12px 0 0">你的 predict_rating() 算出 <b style="color:var(--brass-hi)">${f2(d.score)}</b>，按公式核算 ${f2(d.formula)}：${same ? "✓ 一致" : "✗ 不一致，检查一下 predict_rating()"}</p>`;
+}
+function renderCurve() {
+  const c = result.curve, box = $("curve");
+  const W = 900, H = 300, L = 56, R = 24, T = 20, B = 46;
+  const ks = c.k, n = ks.length, lx = j => L + j / (n - 1) * (W - L - R);
+  const y0 = Math.min(...c.rmse) - 0.01, y1 = Math.max(...c.rmse) + 0.01, ly = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+  const bi = ks.indexOf(c.best), step = (y1 - y0) > 0.2 ? 0.05 : 0.02, ticks = [];
+  for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) ticks.push(v);
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="测试集误差随 K 变化">
+    ${ticks.map(v => `<line class="gl" x1="${L}" x2="${W - R}" y1="${ly(v)}" y2="${ly(v)}"/><text x="${L - 8}" y="${ly(v) + 4}" text-anchor="end">${v.toFixed(2)}</text>`).join("")}
+    <line class="ax" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>
+    ${ks.map((k, j) => `<text x="${lx(j)}" y="${H - B + 18}" text-anchor="middle">${k}</text>`).join("")}
+    <text class="lb" x="${(W + L) / 2}" y="${H - 6}" text-anchor="middle">近邻个数 K</text>
+    <text class="lb" x="14" y="${(H - B) / 2}" transform="rotate(-90 14 ${(H - B) / 2})" text-anchor="middle">测试集 RMSE</text>
+    <path class="mean" d="${c.rmse.map((v, j) => `${j ? "L" : "M"}${lx(j).toFixed(1)},${ly(v).toFixed(1)}`).join("")}"/>
+    ${c.rmse.map((v, j) => `<circle class="dot" cx="${lx(j)}" cy="${ly(v)}" r="4"><title>K=${ks[j]}  RMSE=${f3(v)}</title></circle>
+      <text x="${lx(j)}" y="${ly(v) - 10}" text-anchor="middle" style="font-size:10.5px">${f3(v)}</text>`).join("")}
+    <circle class="best" cx="${lx(bi)}" cy="${ly(c.rmse[bi])}" r="12"/>
+    <text x="${lx(bi) + (bi > n / 2 ? -18 : 18)}" y="${ly(c.rmse[bi]) + 22}" text-anchor="${bi > n / 2 ? "end" : "start"}" style="fill:var(--good);font-size:13px">最优 K=${c.best}</text>
+  </svg>`;
+  $("curveNote").textContent = `main.py 中的 choose_best_k()：对每个候选 K，在测试集上预测并计算 RMSE（预测分和真实分平均差多少）。误差最小的 K=${c.best} 被用来给你做推荐。`;
+}
+
+/* ================= 票根 ================= */
+function openTicket(x) {
+  const d = $("ticket"), m = x.m;
+  let verdict, body = "";
+  if (x.mine) {
+    verdict = `<div class="tk-verdict mine"><b>你打过分</b>你给了 ${x.my} 星（${WORD[x.my]}）。${cur === "user" ? "它是用来找“和你口味像的观众”的依据之一。" : "它可能作为“相似电影”参与其他电影的预测。"}</div>`;
+  } else {
+    verdict = x.lit
+      ? `<div class="tk-verdict lit"><b>已点亮 · 第 ${x.rank} 名</b>${cur === "user" ? "和你口味最像的观众们给它打分普遍较高。" : "你打过高分的电影里，有不少和它很像。"}</div>`
+      : `<div class="tk-verdict dark"><b>预测排第 ${x.order} 名</b>只点亮预测分最高的 ${result.litN} 部，它没挤进去。</div>`;
+    body = `<div class="tk-pred"><span class="s">${f2(x.score)}<small>分</small></span><span class="tk-stars">${"★".repeat(Math.round(x.score))}${"☆".repeat(5 - Math.round(x.score))}</span></div>` +
+      fxTable(x.detail, 6);
+  }
+  d.innerHTML = `<div class="tk">
+      <div class="tk-poster"></div>
+      <div class="tk-body" tabindex="-1">
+        <button class="tk-close" aria-label="关闭">×</button>
+        <div class="tk-top"><span>${ALGO[cur].short} · K=${result.k}</span><span>No.${x.mine ? "—" : String(x.rank || x.order || "—").padStart(2, "0")}</span></div>
+        <h3>${esc(m.name)}</h3>
+        <div class="tk-sub">${esc(m.en)} · ${m.year} · ${esc(m.tags.join(" / "))}</div>
+        <div class="tk-info">MovieLens 上 ${m.n} 人评过，平均 ${m.avg} 分</div>
+        ${body}${verdict}
+      </div></div>`;
+  d.querySelector(".tk-poster").append(posterEl(m));
+  d.querySelector(".tk-close").onclick = () => d.close();
+  d.showModal(); d.querySelector(".tk-body").focus();
+}
+function openInfo(m) {
+  const d = $("ticket"), s = rated.get(m.id) || 0;
+  d.innerHTML = `<div class="tk"><div class="tk-poster"></div><div class="tk-body" tabindex="-1">
+      <button class="tk-close" aria-label="关闭">×</button>
+      <div class="tk-top"><span>MOVIELENS</span><span>#${String(m.id).padStart(2, "0")}</span></div>
+      <h3>${esc(m.name)}</h3><div class="tk-sub">${esc(m.en)} · ${m.year} · ${esc(m.tags.join(" / "))}</div>
+      <div class="tk-info">${m.n} 位观众评过，平均 ${m.avg} 分</div>
+      <div class="tk-verdict ${s ? "mine" : "dark"}"><b>${s ? "你打了 ★" + s : "还没打分"}</b>${s ? WORD[s] : "看过的话，在海报下面点星星打分；没看过就跳过。"}</div>
+    </div></div>`;
+  d.querySelector(".tk-poster").append(posterEl(m));
+  d.querySelector(".tk-close").onclick = () => d.close();
+  d.showModal();
+}
+$("ticket").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+
+/* ================= 切换算法 / 流程 ================= */
+function setAct(n) { [1, 2, 3].forEach(i => $("act" + i).classList.toggle("on", i <= n)); }
+function renderAlgo(animate) {
+  result = shape(data.results[cur]);
+  fxPick = result.list.filter(x => x.lit).sort((a, b) => a.rank - b.rank)[0];
+  $("algoBar").querySelectorAll("button").forEach(b => {
+    const r = data.results[b.dataset.a];
+    b.disabled = !r || !!r.error; b.title = b.disabled ? (r ? r.error : "") : "";
+    b.setAttribute("aria-selected", b.dataset.a === cur);
+  });
+  const A = ALGO[cur];
+  $("lede").textContent = cur === "user"
+    ? `你给 ${rated.size} 部电影打了分。基于用户：在 ${data.n_users - 1} 位观众里找口味最像你的人，用他们的评分为你挑出 ${result.litN} 部。`
+    : `你给 ${rated.size} 部电影打了分。基于物品：找和你打过分的电影最像的片，用你自己的评分为你挑出 ${result.litN} 部。`;
+  $("wallNote").textContent = `${A.name}（K=${result.k}）：亮着的 ${result.litN} 部是预测分最高的，越大越靠前越对你的口味。切换上方按钮，对比两种算法的推荐。`;
+  $("backNote").textContent = cur === "user"
+    ? "基于用户：① 用欧式距离算你和每位观众的相似度 → ② 对每部没看过的电影，在评过它的观众里取最像你的 K 位 → ③ 按公式 (7.5) 加权平均。"
+    : "基于物品：① 用欧式距离算电影两两之间的相似度 → ② 对每部没看过的电影，在你打过分的电影里取和它最像的 K 部 → ③ 按公式 (7.7′)：这部电影的均值 + 你对相似电影评分偏差的加权平均。";
+  revealed = false; buildWall(); renderLeft(); renderFx(); renderCurve();
+  if (animate) reveal(); else document.querySelectorAll(".tile.lit").forEach(t => t.classList.add("on"));
+}
+$("algoBar").querySelectorAll("button").forEach(b => b.onclick = () => {
+  if (b.disabled || b.dataset.a === cur) return;
+  cur = b.dataset.a; $("wall").classList.remove("scores"); $("toggleScores").setAttribute("aria-pressed", "false");
+  renderAlgo(true);
+});
+function showResult() {
+  show("resultView");
+  setAct(2); renderAlgo(true);
+  scrollTo({ top: $("resultView").offsetTop - 20, behavior: "smooth" });
+}
+function restart() {
+  data = null; result = null; show("pickView"); $("tray").classList.remove("away");
+  $("lede").textContent = "给看过的电影打几颗星，协同过滤会从 943 位真实观众的评分里，替你挑下一部。";
+  setAct(1); renderReel(); renderTray(); scrollTo({ top: 0, behavior: "smooth" });
+}
+$("go").onclick = go;
+$("shuffle").onclick = renderReel;
+$("again").onclick = restart;
+$("toBackstage").onclick = () => $("backstage").scrollIntoView({ behavior: "smooth" });
+$("toggleScores").onclick = e => { const on = $("wall").classList.toggle("scores"); e.currentTarget.setAttribute("aria-pressed", on); };
+new ResizeObserver(() => { if (!result || $("resultView").hidden) return; colsFor($("wall").clientWidth) !== wallCols ? buildWall() : sizeRows(); }).observe($("wall"));
+new IntersectionObserver(es => es.forEach(e => e.isIntersecting && result && setAct(3)), { threshold: .2 }).observe($("backstage"));
+
+(async function init() {
+  loadStatus();
+  try {
+    const d = await (await fetch("/api/movies")).json();
+    MOVIES = d.movies.map(m => ({ ...m, color: m.color || GCOLOR[m.tags[0]] || "#e9b44c" }));
+    byId = new Map(MOVIES.map(m => [m.id, m]));
+    Object.entries(d.mine || {}).forEach(([id, s]) => byId.has(+id) && rated.set(+id, +s));   // 读回上次保存的评分
+  } catch (e) {
+    $("reel").innerHTML = `<div class="errbox" style="grid-column:1/-1"><h3>没有连上算法</h3><p>请在 movie-cf-lab 目录下运行 <code>python main.py</code>，它会自动打开网页；没打开的话，复制终端里显示的地址（一般是 <code>http://127.0.0.1:8000</code>）。不要直接双击 index.html。</p></div>`;
+    return;
+  }
+  renderGenres(); renderReel(); renderTray();
+})();
+
+</script>
+</body>
+</html>
